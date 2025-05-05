@@ -166,6 +166,10 @@ func (v *openai) generate(ctx context.Context, cfg moduletools.ClassConfig, prom
 		return nil, v.getError(res.StatusCode, requestID, resBody.Error, params.IsAzure)
 	}
 
+	v.logger.WithFields(logrus.Fields{
+		"resBody": &resBody,
+	}).Info("Response body")
+
 	responseParams := v.getResponseParams(resBody.Usage)
 	textResponse := resBody.Choices[0].Text
 	if len(resBody.Choices) > 0 && textResponse != "" {
@@ -216,6 +220,9 @@ func (v *openai) getParameters(cfg moduletools.ClassConfig, options interface{},
 	}
 	if !params.IsAzure {
 		params.IsAzure = settings.IsAzure()
+	}
+	if !params.IsCompatible {
+		params.IsCompatible = settings.IsCompatible()
 	}
 	if params.Model == "" {
 		params.Model = settings.Model()
@@ -337,7 +344,7 @@ func (v *openai) generateInput(prompt string, params openaiparams.Params) (gener
 
 		var tokens *int
 		var err error
-		if config.IsThirdPartyProvider(params.BaseURL, params.IsAzure, params.ResourceName, params.DeploymentID) {
+		if config.IsThirdPartyProvider(params.BaseURL, params.IsAzure, params.ResourceName, params.DeploymentID, params.IsCompatible) {
 			tokens, err = v.determineTokens(config.GetMaxTokensForModel(params.Model), *params.MaxTokens, params.Model, messages)
 		} else {
 			tokens = params.MaxTokens

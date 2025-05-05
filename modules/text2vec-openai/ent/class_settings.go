@@ -61,6 +61,7 @@ var availableOpenAIModels = []string{
 	"babbage", // only supports 001
 	"curie",   // only supports 001
 	"davinci", // only supports 001
+//	"jinaai/jina-embeddings-v3",
 }
 
 var availableApiVersions = []string{
@@ -148,11 +149,15 @@ func (cs *classSettings) ApiVersion() string {
 }
 
 func (cs *classSettings) IsThirdPartyProvider() bool {
-	return !(strings.Contains(cs.BaseURL(), "api.openai.com") || cs.IsAzure())
+	return !(strings.Contains(cs.BaseURL(), "api.openai.com") || cs.IsAzure() || cs.IsCompatible())
 }
 
 func (cs *classSettings) IsAzure() bool {
 	return cs.BaseClassSettings.GetPropertyAsBool("isAzure", false) || (cs.ResourceName() != "" && cs.DeploymentID() != "")
+}
+
+func (cs *classSettings) IsCompatible() bool {
+	return cs.BaseClassSettings.GetPropertyAsBool("isCompatible", false)
 }
 
 func (cs *classSettings) Dimensions() *int64 {
@@ -174,8 +179,8 @@ func (cs *classSettings) Validate(class *models.Class) error {
 	}
 
 	model := cs.Model()
-	// only validate models for openAI endpoints
-	if !cs.IsThirdPartyProvider() {
+	// only validate models for openAI endpoints even if the server its a compatible one
+	if !cs.IsThirdPartyProvider() || !cs.IsCompatible() {
 		availableModels := append(availableOpenAIModels, availableV3Models...)
 		if !basesettings.ValidateSetting[string](model, availableModels) {
 			return errors.Errorf("wrong OpenAI model name, available model names are: %v", availableModels)

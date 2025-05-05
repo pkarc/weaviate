@@ -22,6 +22,7 @@ type Params struct {
 	ResourceName     string
 	DeploymentID     string
 	IsAzure          bool
+	IsCompatible	 bool
 	Model            string
 	FrequencyPenalty *float64
 	MaxTokens        *int
@@ -50,6 +51,8 @@ func extract(field *ast.ObjectField) interface{} {
 				out.DeploymentID = gqlparser.GetValueAsStringOrEmpty(f)
 			case "isAzure":
 				out.IsAzure = gqlparser.GetValueAsBoolOrFalse(f)
+			case "isCompatible":
+				out.IsCompatible = gqlparser.GetValueAsBoolOrFalse(f)
 			case "model":
 				out.Model = gqlparser.GetValueAsStringOrEmpty(f)
 			case "frequencyPenalty":

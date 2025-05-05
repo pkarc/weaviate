@@ -46,11 +46,12 @@ var availableOpenAIModels = []string{
 	"gpt-4-1106-preview",
 	"gpt-4o",
 	"gpt-4o-mini",
+//	"meta-llama/Llama-3.2-3B-instruct",
 }
 
 var (
 	DefaultOpenAIModel            = "gpt-3.5-turbo"
-	DefaultOpenAITemperature      = 0.0
+	DefaultOpenAITemperature      = 0.3
 	DefaultOpenAIMaxTokens        = defaultMaxTokens[DefaultOpenAIModel]
 	DefaultOpenAIFrequencyPenalty = 0.0
 	DefaultOpenAIPresencePenalty  = 0.0
@@ -71,6 +72,7 @@ var defaultMaxTokens = map[string]float64{
 	"gpt-4-1106-preview": 128000,
 	"gpt-4o":             128000,
 	"gpt-4o-mini":        128000,
+//	"meta-llama/Llama-3.2-3B-instruct": 128000,
 }
 
 var availableApiVersions = []string{
@@ -96,8 +98,8 @@ func IsLegacy(model string) bool {
 	return contains(availableOpenAILegacyModels, model)
 }
 
-func IsThirdPartyProvider(baseURL string, isAzure bool, resourceName, deploymentID string) bool {
-	return !(strings.Contains(baseURL, "api.openai.com") || IsAzure(isAzure, resourceName, deploymentID))
+func IsThirdPartyProvider(baseURL string, isAzure bool, resourceName, deploymentID string, isCompatible bool) bool {
+	return !(strings.Contains(baseURL, "api.openai.com") || IsAzure(isAzure, resourceName, deploymentID) || isCompatible)
 }
 
 func IsAzure(isAzure bool, resourceName, deploymentID string) bool {
@@ -114,6 +116,7 @@ type ClassSettings interface {
 	ResourceName() string
 	DeploymentID() string
 	IsAzure() bool
+	IsCompatible() bool
 	Validate(class *models.Class) error
 	BaseURL() string
 	ApiVersion() string
@@ -135,7 +138,7 @@ func (ic *classSettings) Validate(class *models.Class) error {
 	}
 
 	model := ic.getStringProperty(modelProperty, DefaultOpenAIModel)
-	if model == nil || !ic.validateModel(*model) {
+	if !ic.IsCompatible() && (model == nil || !ic.validateModel(*model)) {
 		return errors.Errorf("wrong OpenAI model name, available model names are: %v", availableOpenAIModels)
 	}
 
@@ -244,6 +247,10 @@ func (ic *classSettings) DeploymentID() string {
 
 func (ic *classSettings) IsAzure() bool {
 	return IsAzure(*ic.getBoolProperty("isAzure", false), ic.ResourceName(), ic.DeploymentID())
+}
+
+func (ic *classSettings) IsCompatible() bool {
+        return *ic.getBoolProperty("isCompatible", false)
 }
 
 func (ic *classSettings) validateAzureConfig(resourceName string, deploymentId string) error {
